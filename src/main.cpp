@@ -37,7 +37,7 @@ const int BRANCO = 30;
 
 // Configuração dos motores
 const int VELOCIDADE_MIN = 60;
-const int VELOCIDADE_MAX = 100;
+const int VELOCIDADE_MAX = 254;
 const int NEUTRO = 127;
 const float angular = 1;
 
@@ -268,20 +268,20 @@ void processarEstrategia(String sensorData) {
 
 	int V = NEUTRO, W = NEUTRO;
 	if (laserValues[3] < RANGE_LASER) { // Inimigo localizado na Lateral Esquerda
-		V = 120;
-		W = 80;
+		V = NEUTRO;
+		W = NEUTRO - 45;
 	}
 	if (laserValues[0] < RANGE_LASER) { // Inimigo localizado na Diagonal Esquerda
-		V = 120;
-		W = 120;
+		V = NEUTRO;
+		W = NEUTRO - 45;
 	}
 	if (laserValues[4] < RANGE_LASER) { // Inimigo localizado na Lateral Direita
-		V = 120;
-		W = 174;
+		V = NEUTRO;
+		W = NEUTRO + 45;
 	}
 	if (laserValues[2] < RANGE_LASER) { // Inimigo localizado na Diagonal Direita
-		V = 120;
-		W = 134;
+		V = NEUTRO;
+		W = NEUTRO + 45;
 	}
 	if (laserValues[1] < RANGE_LASER) { // Inimigo localizado pelo Sensor central
 		V = NEUTRO;
