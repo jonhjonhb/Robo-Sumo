@@ -268,23 +268,23 @@ void processarEstrategia(String sensorData) {
 
 	int V = NEUTRO, W = NEUTRO;
 	if (laserValues[3] < RANGE_LASER) { // Inimigo localizado na Lateral Esquerda
-		V = 40;
-		W = 60;
+		V = 120;
+		W = 80;
 	}
 	if (laserValues[0] < RANGE_LASER) { // Inimigo localizado na Diagonal Esquerda
-		V = 40;
-		W = 100;
+		V = 120;
+		W = 120;
 	}
 	if (laserValues[4] < RANGE_LASER) { // Inimigo localizado na Lateral Direita
-		V = 40;
-		W = 194;
+		V = 120;
+		W = 174;
 	}
 	if (laserValues[2] < RANGE_LASER) { // Inimigo localizado na Diagonal Direita
-		V = 40;
-		W = 154;
+		V = 120;
+		W = 134;
 	}
 	if (laserValues[1] < RANGE_LASER) { // Inimigo localizado pelo Sensor central
-		V = 128;
+		V = NEUTRO;
 		W = NEUTRO;
 	}
 
