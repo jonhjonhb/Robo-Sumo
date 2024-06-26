@@ -33,7 +33,7 @@
 #define IR_sense 34
 #define STRAT1 35
 
-const int BRANCO = 30;
+const int BRANCO = 10;
 
 // Configuração dos motores
 const int VELOCIDADE_MIN = 60;
@@ -254,7 +254,7 @@ void setup() {
 }
 
 void processarEstrategia(String sensorData) {
-	int RANGE_LASER = 15;
+	int RANGE_LASER = 30;
 
 	int laserValues[5];
 	int index = 0;
@@ -266,7 +266,7 @@ void processarEstrategia(String sensorData) {
 		}
 	}
 
-	int V = NEUTRO, W = NEUTRO;
+	int V = NEUTRO + 10, W = NEUTRO;
 	if (laserValues[3] < RANGE_LASER) { // Inimigo localizado na Lateral Esquerda
 		V = NEUTRO;
 		W = NEUTRO - 45;
@@ -277,14 +277,14 @@ void processarEstrategia(String sensorData) {
 	}
 	if (laserValues[4] < RANGE_LASER) { // Inimigo localizado na Lateral Direita
 		V = NEUTRO;
-		W = NEUTRO + 45;
+		W = NEUTRO + 50;
 	}
 	if (laserValues[2] < RANGE_LASER) { // Inimigo localizado na Diagonal Direita
 		V = NEUTRO;
-		W = NEUTRO + 45;
+		W = NEUTRO + 50;
 	}
 	if (laserValues[1] < RANGE_LASER) { // Inimigo localizado pelo Sensor central
-		V = NEUTRO;
+		V = NEUTRO + 63;
 		W = NEUTRO;
 	}
 
@@ -331,34 +331,35 @@ void loop() {
 		irValues[index] = irData.toInt();
 
 		bool limitDetected = false;
-		int V = 127, W = 127;
+		int V = NEUTRO, W = NEUTRO;
 
-		// if (irValues[0] < BRANCO || irValues[3] < BRANCO) { // Direita frente e Esquerda frente
-		// 	limitDetected = true;
-		// 	V = 0;
-		// 	W = 127;
-		// }
-		// if (irValues[2] < BRANCO || irValues[3] < BRANCO) { // Direita trás e Esquerda trás
-		// 	limitDetected = true;
-		// 	V = 254;
-		// 	W = 127;
-		// }
-		// if (irValues[0] < BRANCO && irValues[1] < BRANCO && irValues[2] < BRANCO && irValues[3] < BRANCO) { // Todos os sensores
-		// 	limitDetected = true;
-		// 	V = 127;
-		// 	W = 127;
-		// }
+		if (irValues[0] < BRANCO || irValues[3] < BRANCO) { // Direita frente e Esquerda frente
+			limitDetected = true;
+			V = NEUTRO - 20;
+			W = NEUTRO;
+		}
+		if (irValues[2] < BRANCO || irValues[3] < BRANCO) { // Direita trás e Esquerda trás
+			limitDetected = true;
+			V = NEUTRO + 20;
+			W = NEUTRO;
+		}
+		if (irValues[0] < BRANCO && irValues[1] < BRANCO && irValues[2] < BRANCO && irValues[3] < BRANCO) { // Todos os sensores
+			limitDetected = true;
+			V = NEUTRO;
+			W = NEUTRO;
+		}
 
 		if (limitDetected) {
 			String comando = String(V) + " " + String(W);
-			processarEntrada(comando);
+			controleMotores(V, W);
+			// processarEntrada(comando);
 		} else {
 			// while (SerialBT.available()) {
 			// 	String mensagemRecebida = SerialBT.readStringUntil('\n');
 			// 	//Serial.println("Mensagem recebida via Bluetooth: " + mensagemRecebida);
 			// 	processarEntrada(mensagemRecebida);
 			// }
-			processarEstrategia(sensorData + " ");
+			// processarEstrategia(sensorData + " ");
 		}
 	}
 }
