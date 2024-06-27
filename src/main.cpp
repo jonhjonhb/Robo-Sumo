@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <BluetoothSerial.h>
+// #include <BluetoothSerial.h>
 #include <Adafruit_VL53L0X.h>
 #include <Wire.h>
 #include <ESP32Servo.h> // Biblioteca para controle de servos
@@ -33,7 +33,7 @@
 #define IR_sense 34
 #define STRAT1 35
 
-const int BRANCO = 10;
+const int BRANCO = 30;
 
 // Configuração dos motores
 const int VELOCIDADE_MIN = 60;
@@ -45,7 +45,7 @@ unsigned long previousMillis = 0;
 const long interval = 10;
 int contador = 0;
 
-BluetoothSerial SerialBT;
+// BluetoothSerial SerialBT;
 Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
 Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
 Adafruit_VL53L0X lox3 = Adafruit_VL53L0X();
@@ -159,10 +159,10 @@ String getInfraRedSensorData() {
 	return irData;
 }
 
-void enviarMensagemBluetooth(const String &mensagem) {
-	SerialBT.println(mensagem);
-	contador++;
-}
+// void enviarMensagemBluetooth(const String &mensagem) {
+// 	SerialBT.println(mensagem);
+// 	contador++;
+// }
 
 void controleMotores(int VD, int VE) {
 	if (VD > 0) {
@@ -225,7 +225,7 @@ void processarEntrada(String entrada) {
 
 void setup() {
 	Serial.begin(115200);
-	SerialBT.begin("TIGAO_O_RUIM");
+	// SerialBT.begin("TIGAO_O_RUIM");
 
 	pinMode(FRENTE_D, OUTPUT);
 	pinMode(TRAS_D, OUTPUT);
@@ -296,28 +296,28 @@ void loop() {
 	unsigned long currentMillis = millis();
 
 	static bool lastConnectionStatus = false;
-	bool currentConnectionStatus = SerialBT.connected();
+	// bool currentConnectionStatus = SerialBT.connected();
 
-	if (currentConnectionStatus != lastConnectionStatus) {
-		if (currentConnectionStatus) {
-			// Conexão Bluetooth foi estabelecida
-			servo_dir.write(posFinalDireita);
-			servo_esq.write(posFinalEsquerda);
-		} else {
-			// Conexão Bluetooth foi perdida
-			servo_dir.write(posInicial);
-			servo_esq.write(posInicial);
-			controleMotores(0, 0);
-		}
-		lastConnectionStatus = currentConnectionStatus;
-	}
+	// if (currentConnectionStatus != lastConnectionStatus) {
+	// 	if (currentConnectionStatus) {
+	// 		// Conexão Bluetooth foi estabelecida
+	// 		servo_dir.write(posFinalDireita);
+	// 		servo_esq.write(posFinalEsquerda);
+	// 	} else {
+	// 		// Conexão Bluetooth foi perdida
+	// 		servo_dir.write(posInicial);
+	// 		servo_esq.write(posInicial);
+	// 		controleMotores(0, 0);
+	// 	}
+	// 	lastConnectionStatus = currentConnectionStatus;
+	// }
 
 	if (currentMillis - previousMillis >= interval) {
 		previousMillis = currentMillis;
 
 		String sensorData = getSensorData();
 		String irData = getInfraRedSensorData();
-		enviarMensagemBluetooth(irData + sensorData);
+		// enviarMensagemBluetooth(irData + sensorData);
 
 		int irValues[4];
 		int index = 0;
@@ -335,12 +335,12 @@ void loop() {
 
 		if (irValues[0] < BRANCO || irValues[3] < BRANCO) { // Direita frente e Esquerda frente
 			limitDetected = true;
-			V = NEUTRO - 20;
+			V = NEUTRO - 40;
 			W = NEUTRO;
 		}
 		if (irValues[2] < BRANCO || irValues[3] < BRANCO) { // Direita trás e Esquerda trás
 			limitDetected = true;
-			V = NEUTRO + 20;
+			V = NEUTRO + 40;
 			W = NEUTRO;
 		}
 		if (irValues[0] < BRANCO && irValues[1] < BRANCO && irValues[2] < BRANCO && irValues[3] < BRANCO) { // Todos os sensores
@@ -349,17 +349,18 @@ void loop() {
 			W = NEUTRO;
 		}
 
-		if (limitDetected) {
+		// if (limitDetected) {
 			String comando = String(V) + " " + String(W);
-			controleMotores(V, W);
-			// processarEntrada(comando);
-		} else {
+			// controleMotores(V, W);
+			Serial.println(comando);
+			processarEntrada(comando);
+		// } else {
 			// while (SerialBT.available()) {
 			// 	String mensagemRecebida = SerialBT.readStringUntil('\n');
 			// 	//Serial.println("Mensagem recebida via Bluetooth: " + mensagemRecebida);
 			// 	processarEntrada(mensagemRecebida);
 			// }
 			// processarEstrategia(sensorData + " ");
-		}
+		// }
 	}
 }
