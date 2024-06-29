@@ -244,7 +244,7 @@ void processarEntrada(String entrada) {
 void processarEstrategia(int &velocidadeLinear, int &velocidadeAngular) {
     int RANGE_LASER = 30;
 
-    velocidadeLinear = NEUTRO - 1;
+    velocidadeLinear = NEUTRO - 1; // andar para trás enquanto os sensores da frente estão ruins
     velocidadeAngular = NEUTRO;
     if (sensorLaserData[3] < RANGE_LASER) { // Inimigo localizado na Lateral Esquerda
 		velocidadeLinear = NEUTRO;
@@ -268,20 +268,11 @@ void processarEstrategia(int &velocidadeLinear, int &velocidadeAngular) {
     }
 }
 
-void realizarRotacao(){
-	// unsigned long currentMillis = millis();
-	// while (true) {
-		// if (currentMillis - lastMillis < 1500) {
-		// 	lastMillis = currentMillis;
-		
-	processarEntrada("207 127");
+void realizarRotacao(){		
+	processarEntrada("207 127"); // Andar para a frente
 	delay(300);
-			// continue;
-		// }
-	processarEntrada("127 254");
+	processarEntrada("127 254"); // rotação no maximo
 	delay(200);
-	// 	break;
-	// }
 }
 
 void readSensorsTask(void *parameter) {
