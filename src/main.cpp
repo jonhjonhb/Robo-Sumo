@@ -33,13 +33,16 @@
 #define IR_sense 34
 #define STRAT1 35
 
-const int BRANCO = 30;
+const int BRANCO = 50;
 
 // Configuração dos motores
 const int VELOCIDADE_MIN = 60;
 const int VELOCIDADE_MAX = 254;
 const int NEUTRO = 127;
 const float angular = 1;
+
+int sensorInfraRedData[4];
+int sensorLaserData[5];
 
 unsigned long previousMillis = 0;
 const long interval = 10;
@@ -121,48 +124,54 @@ void readSensors() {
 	lox5.rangingTest(&measure5, false);
 }
 
-String getSensorData() {
+void getSensorData() {
 	readSensors();
-
 	int distance1 = (measure1.RangeStatus != 4 && measure1.RangeMilliMeter <= 800) ? measure1.RangeMilliMeter : 800;
 	int distance2 = (measure2.RangeStatus != 4 && measure2.RangeMilliMeter <= 800) ? measure2.RangeMilliMeter : 800;
 	int distance3 = (measure3.RangeStatus != 4 && measure3.RangeMilliMeter <= 800) ? measure3.RangeMilliMeter : 800;
 	int distance4 = (measure4.RangeStatus != 4 && measure4.RangeMilliMeter <= 800) ? measure4.RangeMilliMeter : 800;
 	int distance5 = (measure5.RangeStatus != 4 && measure5.RangeMilliMeter <= 800) ? measure5.RangeMilliMeter : 800;
-
-	return String(distance3 / 10) + " " +
-			String(distance5 / 10) + " " +
-			String(distance4 / 10) + " " +
-			String(distance1 / 10) + " " +
-			String(distance2 / 10);
+	sensorLaserData[0] = distance3/10;
+	sensorLaserData[1] = distance5/10;
+	sensorLaserData[2] = distance4/10;
+	sensorLaserData[3] = distance1/10;
+	sensorLaserData[4] = distance2/10;
 }
 
-String getInfraRedSensorData() {
-	String irData = "";
+String formatSensorLaser(){
+	return String(sensorLaserData[0] / 10) + " " +
+			String(sensorLaserData[1] / 10) + " " +
+			String(sensorLaserData[2] / 10) + " " +
+			String(sensorLaserData[3] / 10) + " " +
+			String(sensorLaserData[4] / 10);
+}
 
+void getInfraRedSensorData() {
 	digitalWrite(S0_A, LOW);
 	digitalWrite(S1_B, LOW);
-	irData += String(analogRead(IR_sense)) + " ";
+	sensorInfraRedData[0] = analogRead(IR_sense);
 
 	digitalWrite(S0_A, HIGH);
 	digitalWrite(S1_B, LOW);
-	irData += String(analogRead(IR_sense)) + " ";
+	sensorInfraRedData[1] = analogRead(IR_sense);
 
 	digitalWrite(S0_A, HIGH);
 	digitalWrite(S1_B, HIGH);
-	irData += String(analogRead(IR_sense)) + " ";
+	sensorInfraRedData[2] = analogRead(IR_sense);
 
 	digitalWrite(S0_A, LOW);
 	digitalWrite(S1_B, HIGH);
-	irData += String(analogRead(IR_sense)) + " ";
-
-	return irData;
+	sensorInfraRedData[3] = analogRead(IR_sense);
 }
 
-// void enviarMensagemBluetooth(const String &mensagem) {
-// 	SerialBT.println(mensagem);
-// 	contador++;
-// }
+String formatInfraRedSensor() {
+	String formatInfraRed = "";
+	formatInfraRed += String(sensorInfraRedData[0]) + " ";
+	formatInfraRed += String(sensorInfraRedData[1]) + " ";
+	formatInfraRed += String(sensorInfraRedData[2]) + " ";
+	formatInfraRed += String(sensorInfraRedData[3]) + " ";
+	return formatInfraRed;
+}
 
 void controleMotores(int VD, int VE) {
 	if (VD > 0) {
@@ -225,7 +234,6 @@ void processarEntrada(String entrada) {
 
 void setup() {
 	Serial.begin(115200);
-	// SerialBT.begin("TIGAO_O_RUIM");
 
 	pinMode(FRENTE_D, OUTPUT);
 	pinMode(TRAS_D, OUTPUT);
@@ -253,114 +261,60 @@ void setup() {
 	servo_esq.write(posInicial); // Inicializa na posição inicial
 }
 
-void processarEstrategia(String sensorData) {
+void processarEstrategia(int &velocidadeLinear, int &velocidadeAngular) {
 	int RANGE_LASER = 30;
 
-	int laserValues[5];
-	int index = 0;
-	for (int i = 0; i < sensorData.length(); i++) {
-		if (sensorData[i] == ' ') {
-			laserValues[index++] = sensorData.substring(0, i).toInt();
-			sensorData.remove(0, i + 1);
-			i = 0;
-		}
+	velocidadeLinear = NEUTRO - 1;
+	velocidadeAngular = NEUTRO;
+	if (sensorLaserData[3] < RANGE_LASER) { // Inimigo localizado na Lateral Esquerda
+		velocidadeLinear = NEUTRO;
+		velocidadeAngular = NEUTRO - 45;
 	}
+	if (sensorLaserData[0] < RANGE_LASER) { // Inimigo localizado na Diagonal Esquerda
+		velocidadeLinear = NEUTRO;
+		velocidadeAngular = NEUTRO - 45;
+	}
+	if (sensorLaserData[4] < RANGE_LASER) { // Inimigo localizado na Lateral Direita
+		velocidadeLinear = NEUTRO;
+		velocidadeAngular = NEUTRO + 50;
+	}
+	if (sensorLaserData[2] < RANGE_LASER) { // Inimigo localizado na Diagonal Direita
+		velocidadeLinear = NEUTRO;
+		velocidadeAngular = NEUTRO + 50;
+	}
+	if (sensorLaserData[1] < RANGE_LASER) { // Inimigo localizado pelo Sensor central
+		velocidadeLinear = NEUTRO + 63;
+		velocidadeAngular = NEUTRO;
+	}
+}
 
-	int V = NEUTRO + 10, W = NEUTRO;
-	if (laserValues[3] < RANGE_LASER) { // Inimigo localizado na Lateral Esquerda
-		V = NEUTRO;
-		W = NEUTRO - 45;
-	}
-	if (laserValues[0] < RANGE_LASER) { // Inimigo localizado na Diagonal Esquerda
-		V = NEUTRO;
-		W = NEUTRO - 45;
-	}
-	if (laserValues[4] < RANGE_LASER) { // Inimigo localizado na Lateral Direita
-		V = NEUTRO;
-		W = NEUTRO + 50;
-	}
-	if (laserValues[2] < RANGE_LASER) { // Inimigo localizado na Diagonal Direita
-		V = NEUTRO;
-		W = NEUTRO + 50;
-	}
-	if (laserValues[1] < RANGE_LASER) { // Inimigo localizado pelo Sensor central
-		V = NEUTRO + 63;
+void loop() {
+	getInfraRedSensorData();
+
+	bool limitDetected = false;
+	int V = NEUTRO - 1, W = NEUTRO;
+
+	if (sensorInfraRedData[0] < BRANCO || sensorInfraRedData[3] < BRANCO) { // Direita frente e Esquerda frente
+		limitDetected = true;
+		V = NEUTRO - 80;
 		W = NEUTRO;
+	}
+	if (sensorInfraRedData[2] < BRANCO || sensorInfraRedData[3] < BRANCO) { // Direita trás e Esquerda trás
+		limitDetected = true;
+		V = NEUTRO + 80;
+		W = NEUTRO;
+	}
+	if (sensorInfraRedData[0] < BRANCO && sensorInfraRedData[1] < BRANCO && sensorInfraRedData[2] < BRANCO && sensorInfraRedData[3] < BRANCO) { // Todos os sensores
+		limitDetected = true;
+		V = NEUTRO;
+		W = NEUTRO;
+	}
+	
+	if (!limitDetected) {
+		getSensorData();
+		processarEstrategia(V, W);
 	}
 
 	String comando = String(V) + " " + String(W);
 	processarEntrada(comando);
-}
-
-void loop() {
-	unsigned long currentMillis = millis();
-
-	static bool lastConnectionStatus = false;
-	// bool currentConnectionStatus = SerialBT.connected();
-
-	// if (currentConnectionStatus != lastConnectionStatus) {
-	// 	if (currentConnectionStatus) {
-	// 		// Conexão Bluetooth foi estabelecida
-	// 		servo_dir.write(posFinalDireita);
-	// 		servo_esq.write(posFinalEsquerda);
-	// 	} else {
-	// 		// Conexão Bluetooth foi perdida
-	// 		servo_dir.write(posInicial);
-	// 		servo_esq.write(posInicial);
-	// 		controleMotores(0, 0);
-	// 	}
-	// 	lastConnectionStatus = currentConnectionStatus;
-	// }
-
-	if (currentMillis - previousMillis >= interval) {
-		previousMillis = currentMillis;
-
-		String sensorData = getSensorData();
-		String irData = getInfraRedSensorData();
-		// enviarMensagemBluetooth(irData + sensorData);
-
-		int irValues[4];
-		int index = 0;
-		for (int i = 0; i < irData.length(); i++) {
-			if (irData[i] == ' ') {
-				irValues[index++] = irData.substring(0, i).toInt();
-				irData.remove(0, i + 1);
-				i = 0;
-			}
-		}
-		irValues[index] = irData.toInt();
-
-		bool limitDetected = false;
-		int V = NEUTRO, W = NEUTRO;
-
-		if (irValues[0] < BRANCO || irValues[3] < BRANCO) { // Direita frente e Esquerda frente
-			limitDetected = true;
-			V = NEUTRO - 40;
-			W = NEUTRO;
-		}
-		if (irValues[2] < BRANCO || irValues[3] < BRANCO) { // Direita trás e Esquerda trás
-			limitDetected = true;
-			V = NEUTRO + 40;
-			W = NEUTRO;
-		}
-		if (irValues[0] < BRANCO && irValues[1] < BRANCO && irValues[2] < BRANCO && irValues[3] < BRANCO) { // Todos os sensores
-			limitDetected = true;
-			V = NEUTRO;
-			W = NEUTRO;
-		}
-
-		// if (limitDetected) {
-			String comando = String(V) + " " + String(W);
-			// controleMotores(V, W);
-			Serial.println(comando);
-			processarEntrada(comando);
-		// } else {
-			// while (SerialBT.available()) {
-			// 	String mensagemRecebida = SerialBT.readStringUntil('\n');
-			// 	//Serial.println("Mensagem recebida via Bluetooth: " + mensagemRecebida);
-			// 	processarEntrada(mensagemRecebida);
-			// }
-			// processarEstrategia(sensorData + " ");
-		// }
-	}
 }
